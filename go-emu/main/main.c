@@ -354,7 +354,16 @@ void goemu_loop()
                 last_key = ODROID_INPUT_START;
                 if (emu->available)
                 {
-                    odroid_settings_StartAction_set(ODROID_START_ACTION_RESTART);
+                    int sel = odroid_ui_ask_v2("Load savestate?",color_selected, COLOR_RGB(1,2,5), 1);
+                    if (sel < 0) 
+                    {
+                        selected_last = -1;
+                        idle_counter = 0;
+                        continue;
+                    } else if (sel==1)
+                    {
+                        odroid_settings_StartAction_set(ODROID_START_ACTION_RESTART);
+                    }
                     break;
                 }
                 else

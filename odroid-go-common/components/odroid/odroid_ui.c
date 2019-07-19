@@ -319,6 +319,25 @@ void odroid_ui_window_clear(odroid_ui_window *window) {
 	draw_fill(window->x - 3, window->y - 3, window->width * 8 + 3 * 2, window->height * 8 + 3 * 2, color_black);
 }
 
+void odroid_ui_windows_draw_border(int x, int y, int width, int height, uint16_t color_bg)
+{
+    draw_fill(x + ADD_2, y - 3, width - ADD_2 * 2, 1, color_bg);
+    draw_fill(x + ADD_1, y - 2, width - ADD_1 * 2, 1, color_bg);
+    draw_fill(x, y - 1, width, 1, color_bg);
+    
+    draw_fill(x, y + height + 0, width, 1, color_bg);
+    draw_fill(x + ADD_1, y + height + 1, width - ADD_1 * 2, 1, color_bg);
+    draw_fill(x + ADD_2, y + height + 2, width - ADD_2 * 2, 1, color_bg);
+    
+    draw_fill(x - 3, y + ADD_2, 1, height - ADD_2 * 2, color_bg);
+    draw_fill(x - 2, y + ADD_1, 1, height - ADD_1 * 2, color_bg);
+    draw_fill(x - 1, y, 1, height, color_bg);
+    
+    draw_fill(x + width, y, 1, height, color_bg);
+    draw_fill(x + width + 1, y + ADD_1, 1, height - ADD_1 * 2, color_bg);
+    draw_fill(x + width + 2, y + ADD_2, 1, height - ADD_2 * 2, color_bg);
+}
+
 void odroid_ui_window_update(odroid_ui_window *window) {
 	char text[64] = " ";
 	
@@ -885,6 +904,63 @@ bool odroid_ui_popup(const char *text, uint16_t color, uint16_t color_bg)
             last_key = ODROID_INPUT_B;
             rc = false;
             break;
+        }
+        
+        usleep(20*1000UL);
+    }
+    wait_for_key(last_key);
+    return rc;
+}
+
+int odroid_ui_ask_v2(const char *text, uint16_t color, uint16_t color_bg, int selected_initial)
+{
+    int len = strlen(text) + 2;
+    int x = (320 - (len*8))/2;
+    int y = 112;
+    int x2 = (320 - (9*8))/2;
+    draw_chars(x, y  , len, " ", color, color_bg);
+    draw_chars(x, y+ 8*1, len, " ", color, color_bg);
+    draw_chars(x, y+ 8*2, len, " ", color, color_bg);
+    draw_chars(x, y+ 8*3, len, " ", color, color_bg);
+    odroid_ui_windows_draw_border(x, y, len * 8, 4 * 8, color_bg);
+    draw_chars(x + 8, y+ 8*1, len - 2, text, color, color_bg);
+    int last_key = -1;
+    int rc = selected_initial;
+    int rc_old = -1;
+    uint16_t color_sel = color_bg;
+    uint16_t color_bg_sel = color;
+    while (1)
+    {
+        odroid_gamepad_state joystick;
+        odroid_input_gamepad_read(&joystick);
+        if (last_key >=0) {
+            if (!joystick.values[last_key]) {
+                last_key = -1;
+            }
+        } else {   
+            if (joystick.values[ODROID_INPUT_LEFT]) {
+                last_key = ODROID_INPUT_LEFT;
+                rc = rc==0?1:0;
+            } else if (joystick.values[ODROID_INPUT_RIGHT]) {
+                last_key = ODROID_INPUT_RIGHT;
+                rc = rc==0?1:0;
+            } else if (joystick.values[ODROID_INPUT_A]) {
+                last_key = ODROID_INPUT_A;
+                break;
+            } else if (joystick.values[ODROID_INPUT_B]) {
+                last_key = ODROID_INPUT_B;
+                rc = -1;
+                break;
+            }
+        }
+        if (rc_old != rc)
+        {
+            int nr;
+            nr = 0;
+            draw_chars(x2, y+ 8*2, 5, " Yes", nr==rc?color_sel:color, nr==rc?color_bg_sel:color_bg);
+            nr = 1;
+            draw_chars(x2 + 8*5, y+ 8*2, 4, " No", nr==rc?color_sel:color, nr==rc?color_bg_sel:color_bg);
+            rc_old = rc;
         }
         
         usleep(20*1000UL);

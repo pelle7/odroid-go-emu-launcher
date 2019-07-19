@@ -58,7 +58,8 @@ typedef void (ODROID_UI_CALLCONV *odroid_ui_func_update_def)(odroid_ui_entry *en
 typedef odroid_ui_func_toggle_rc (ODROID_UI_CALLCONV *odroid_ui_func_toggle_def)(odroid_ui_entry *entry, odroid_gamepad_state *joystick);
 typedef void (ODROID_UI_CALLCONV *odroid_ui_func_window_init_def)(odroid_ui_window *entry);
 
-// RGB (red<<12)&0xf800) , (green<<7)&0x07e0) , (blue<<1)&0x001f) -> byte swap
+// red 5bits, green 6bits, blue 5bits
+#define COLOR_RGB(r,g,b) ( ((r<<12)&0xf800) + ((g<<7)&0x07e0) + ((b<<1)&0x001f) )
 #define color_default 0x632c
 #define color_selected 0xffff
 #define color_black 0x0000
@@ -66,6 +67,15 @@ typedef void (ODROID_UI_CALLCONV *odroid_ui_func_window_init_def)(odroid_ui_wind
 
 #define color_red 0xf800
 #define color_green 0x07e0
+
+#define BLACK 0x0000
+#define BLUE 0x001F
+#define RED 0xF800
+#define GREEN 0x07E0
+#define CYAN 0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW 0xFFE0
+#define WHITE 0xFFFF
 
 typedef struct odroid_ui_entry
 {
@@ -97,6 +107,7 @@ void odroid_ui_debug_enter_loop();
 void update_ui_fps_text(float fps);
 void odroid_ui_stats(uint16_t x, uint16_t y);
 bool odroid_ui_ask(const char *text);
+int odroid_ui_ask_v2(const char *text, uint16_t color_fg, uint16_t color_bg, int selected_initial);
 bool odroid_ui_error(const char *text);
 
 void QuickSaveSetBuffer(void* data);
