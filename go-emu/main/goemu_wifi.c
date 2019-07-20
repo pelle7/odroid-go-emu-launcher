@@ -357,10 +357,12 @@ esp_err_t sd_handler_post(httpd_req_t *req)
     int buf_size = 4096;
     char *buf = (char*)malloc(buf_size);
     int ret, remaining = req->content_len;
+    int offset = 0;
+    int total = remaining;
 
     while (remaining > 0) {
         if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
+                        MIN(remaining, buf_size))) <= 0) {
             if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
                 /* Retry receiving if timeout occurred */
                 continue;
@@ -386,6 +388,8 @@ esp_err_t sd_handler_post(httpd_req_t *req)
             odroid_display_unlock();
             return ESP_FAIL;
         }
+        offset+=ret;
+        ESP_LOGI(TAG, "File-Dest: %s (%d/%d)", path_dest, offset, total);
         
         // httpd_resp_send_chunk(req, buf, ret);
         remaining -= ret;
@@ -395,6 +399,7 @@ esp_err_t sd_handler_post(httpd_req_t *req)
         }
         odroid_display_unlock();
     }
+    ESP_LOGI(TAG, "File-Dest: %s (READY)", path_dest);
     free(buf);
     free(path_dest);
 
