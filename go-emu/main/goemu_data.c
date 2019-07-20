@@ -5,7 +5,7 @@
 
 static const char* NvsKey_EmuOffset = "EmuOffset";
 
-goemu_emu_data *goemu_data;
+static goemu_emu_data *goemu_data = NULL;
 
 goemu_emu_data_entry *goemu_data_add(goemu_emu_data *d, const char *system, const char *path, const char* ext, const char *part)
 {
@@ -32,6 +32,10 @@ goemu_emu_data_entry *goemu_data_add(goemu_emu_data *d, const char *system, cons
 
 goemu_emu_data *goemu_data_setup()
 {
+    if (goemu_data)
+    {
+        return goemu_data;
+    }
     uint8_t max = 12;
     goemu_emu_data *rc = (goemu_emu_data*)malloc(sizeof(goemu_emu_data));
     rc->entries = (goemu_emu_data_entry*)malloc(sizeof(goemu_emu_data_entry)*max);

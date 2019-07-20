@@ -28,6 +28,7 @@
 
 #include "goemu_data.h"
 #include "goemu_ui.h"
+#include "goemu_wifi.h"
 
 const char* SD_BASE_PATH = "/sd";
 
@@ -276,7 +277,6 @@ void goemu_loop()
             }
         }
     }
-    
     odroid_display_lock();
     
     int battery_counter = 1000;
@@ -285,9 +285,8 @@ void goemu_loop()
     bool battery_draw = false;
     odroid_input_battery_level_read(&battery_state);
     bool menu_restart = false;
-
 //#define DEBUG_TEST_BATTERY
-    
+
     while (true)
     {
 #ifdef DEBUG_TEST_BATTERY
@@ -311,6 +310,7 @@ void goemu_loop()
         
         if (selected_emu != selected_emu_last)
         {
+            odroid_display_lock();
             if (selected_emu >= all_emus->count)
             {
                 selected_emu = 0;
@@ -364,6 +364,7 @@ void goemu_loop()
             odroid_ui_draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
             idle_counter = 0;
             battery_draw = true;
+            //odroid_display_unlock();
         }
         if (battery_draw)
         {
@@ -379,7 +380,9 @@ void goemu_loop()
         
         if (idle_counter++==6)
         {
+            odroid_display_lock();
             draw_cover(emu, &joystick);
+            odroid_display_unlock();
         }
         
         if (idle_counter> 50*60)
@@ -458,7 +461,9 @@ void goemu_loop()
         }
         if (selected_last != emu->selected)
         {
+            odroid_display_lock();
             goemu_ui_choose_file_draw(emu);
+            odroid_display_unlock();
             //if (emu->files.count > 0 && emu->checksums[emu->selected] > 1)
         }
         
@@ -500,6 +505,7 @@ void app_main(void)
     odroid_ui_enter_loop();
     ili9341_blank_screen();
     goemu_setup();
+    goemu_wifi_start();
     goemu_loop();
     odroid_ui_ask("go-emu!");            
 }

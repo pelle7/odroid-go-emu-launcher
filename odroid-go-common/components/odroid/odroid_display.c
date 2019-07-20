@@ -14,9 +14,7 @@
 #include "driver/spi_master.h"
 #include "driver/ledc.h"
 #include "driver/rtc_io.h"
-
 #include <string.h>
-
 
 const int DUTY_MAX = 0x1fff;
 
@@ -1280,6 +1278,21 @@ void odroid_display_lock()
     {
         abort();
     }
+}
+
+int odroid_display_lock_ext()
+{
+    if (!display_mutex)
+    {
+        display_mutex = xSemaphoreCreateMutex();
+        if (!display_mutex) return false;
+    }
+
+    if (xSemaphoreTake(display_mutex, 1000 / portTICK_RATE_MS) != pdTRUE)
+    {
+        return false;
+    }
+    return true;
 }
 
 void odroid_display_unlock()

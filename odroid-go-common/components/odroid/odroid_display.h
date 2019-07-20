@@ -35,6 +35,7 @@ int is_backlight_initialized();
 void odroid_display_show_splash();
 void odroid_display_drain_spi();
 void odroid_display_lock();
+int odroid_display_lock_ext();
 void odroid_display_unlock();
 void odroid_display_show_sderr(int errNum);
 void odroid_display_show_hourglass();
