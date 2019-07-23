@@ -57,6 +57,7 @@ goemu_emu_data *goemu_data_setup()
         }
     }
     goemu_data_add(rc, "Atari 2600", "a26", "a26", "stella");
+    goemu_data_add(rc, "Atari 7800", "a78", "a78", "prosystem");
     
     goemu_data = rc;
     for (int i = 0; i < goemu_data->count; i++)
