@@ -281,6 +281,7 @@ void goemu_loop()
             {
                 selected_emu = all_emus->count - 1;
             }
+            goemu_emu_data_entry *emu_last = emu;
             emu = &all_emus->entries[selected_emu];
             int y = 4;
             int x = 6 * 8;
@@ -290,6 +291,13 @@ void goemu_loop()
             if (first)
             {
                 draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, color_black);
+                // Workaround for 4GB sd card? If the last SD-card access failed, new one fails too? 
+                if (emu_last && emu_last->files.count>0)
+                {
+                    char *file = goemu_ui_choose_file_getfile(emu_last);
+                    FILE *f = fopen(file, "rb");
+                    if (f) fclose(f);
+                }
             }
             goemu_ui_choose_file_load(emu);
             if (emu->image_logo)
@@ -377,7 +385,9 @@ void goemu_loop()
             } else if (joystick.values[ODROID_INPUT_START]) {
                 last_key = ODROID_INPUT_START;
             }
-            else
+            else if (joystick.values[ODROID_INPUT_MENU]) {
+                esp_restart();
+            } else
             {
             goemu_ui_choose_file_input(emu, &joystick, &last_key);
             }
