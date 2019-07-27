@@ -5,10 +5,7 @@
 #include "esp_system.h"
 #include "odroid_input.h"
 
-#define MY_LYNX_INTERNAL_GAME_SELECT
-
 extern bool config_speedup;
-extern bool config_ui_stats;
 
 #ifndef ODROID_UI_CALLCONV
 #  if defined(__GNUC__) && defined(__i386__) && !defined(__x86_64__)
@@ -104,8 +101,6 @@ typedef struct odroid_ui_window
 bool odroid_ui_menu(bool restart_menu);
 bool odroid_ui_menu_ext(bool restart_menu, odroid_ui_func_window_init_def func_window_init);
 void odroid_ui_debug_enter_loop();
-void update_ui_fps_text(float fps);
-void odroid_ui_stats(uint16_t x, uint16_t y);
 bool odroid_ui_ask(const char *text);
 int odroid_ui_ask_v2(const char *text, uint16_t color_fg, uint16_t color_bg, int selected_initial);
 bool odroid_ui_error(const char *text);
@@ -115,8 +110,6 @@ extern bool QuickLoadState(FILE *f);
 extern bool QuickSaveState(FILE *f);
 
 odroid_ui_entry *odroid_ui_create_entry(odroid_ui_window *window, odroid_ui_func_update_def func_update, odroid_ui_func_toggle_def func_toggle);
-
-char *odroid_ui_choose_file(const char *path, const char *ext);
 
 void clean_draw_buffer();
 void draw_chars(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg);

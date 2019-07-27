@@ -32,7 +32,7 @@ goemu_emu_data_entry *goemu_data_add(goemu_emu_data *d, const char *system, cons
 
 goemu_emu_data *goemu_data_setup()
 {
-    uint8_t max = 10;
+    uint8_t max = 12;
     goemu_emu_data *rc = (goemu_emu_data*)malloc(sizeof(goemu_emu_data));
     rc->entries = (goemu_emu_data_entry*)malloc(sizeof(goemu_emu_data_entry)*max);
     rc->count = 0;
@@ -58,6 +58,7 @@ goemu_emu_data *goemu_data_setup()
     }
     goemu_data_add(rc, "Atari 2600", "a26", "a26", "stella");
     goemu_data_add(rc, "Atari 7800", "a78", "a78", "prosystem");
+    goemu_data_add(rc, "ZX Spectrum", "spectrum", "z80", "spectrum");
     
     goemu_data = rc;
     for (int i = 0; i < goemu_data->count; i++)
