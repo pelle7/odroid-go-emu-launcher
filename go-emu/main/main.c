@@ -41,6 +41,10 @@ void odroid_setup()
     odroid_input_battery_level_init();
     
     ili9341_prepare();
+    
+    // Audio
+    odroid_volume_level level = odroid_settings_Volume_get();
+    odroid_audio_volume_set(level);
 
 
     // Disable LCD CD to prevent garbage
@@ -130,13 +134,13 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
 {
     if (emu->files.count == 0)
     {
-        draw_chars(320-8*12, (6)*8, 12, " ", color_red, color_black);
+        draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
         return;
     }
     uint32_t crc = emu->checksums[emu->selected];
     if (crc == 0)
     {
-        draw_chars(320-8*12, (6)*8, 12, "       CRC32", color_green, color_black);
+        draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
         char *file = goemu_ui_choose_file_getfile(emu);
         FILE *f = fopen(file, "rb");
         if (f)
@@ -226,10 +230,10 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
     }
     if (crc == 1)
     {
-        draw_chars(320-8*12, (6)*8, 12, "No art found", color_red, color_black);
+        draw_chars(320-8*12, (6)*8, 12, "No art found", C_RED, C_BLACK);
     } else
     {
-        draw_chars(320-8*12, (6)*8, 12, " ", color_red, color_black);
+        draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
     }
     emu->checksums[emu->selected] = crc;
 }
@@ -270,8 +274,35 @@ void goemu_loop()
     
     odroid_display_lock();
     
+    int battery_counter = 1000;
+    int battery_percentage_old = 0; 
+    odroid_battery_state battery_state;
+    bool battery_draw = false;
+    odroid_input_battery_level_read(&battery_state);
+
+//#define DEBUG_TEST_BATTERY
+    
     while (true)
     {
+#ifdef DEBUG_TEST_BATTERY
+        if (battery_counter++>=20)
+        {
+            if (++battery_state.percentage>100) battery_state.percentage = 0;
+#else
+        if (battery_counter++>=100)
+        {
+            odroid_input_battery_level_read(&battery_state);
+#endif
+            printf("HEAP:0x%x, BATTERY:%d [%d]\n", esp_get_free_heap_size(), battery_state.millivolts, battery_state.percentage);
+            battery_counter = 0;
+            int tmp = ((battery_state.percentage-1)/5) + 1;
+            if (battery_percentage_old != tmp)
+            {
+                battery_percentage_old = tmp;
+                battery_draw = true;
+            }  
+        } else if (battery_percentage_old<3 && (battery_counter%3==0)) battery_draw = true;
+        
         if (selected_emu != selected_emu_last)
         {
             if (selected_emu >= all_emus->count)
@@ -286,11 +317,11 @@ void goemu_loop()
             int y = 4;
             int x = 6 * 8;
             int length = 40 - 6;
-            draw_chars(x, y*8, length, emu->system_name, color_selected, color_black);
+            draw_chars(x, y*8, length, emu->system_name, color_selected, C_BLACK);
             bool first = !emu->initialized;
             if (first)
             {
-                draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, color_black);
+                draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, C_BLACK);
                 // Workaround for 4GB sd card? If the last SD-card access failed, new one fails too? 
                 if (emu_last && emu_last->files.count>0)
                 {
@@ -313,7 +344,7 @@ void goemu_loop()
             selected_last = -1;
             if (first)
             {
-                draw_chars(x, (y+1)*8, length, " ", color_selected, color_black);
+                draw_chars(x, (y+1)*8, length, " ", color_selected, C_BLACK);
             }
             char buf[40];
             if (emu->available)
@@ -324,8 +355,14 @@ void goemu_loop()
             {
                 sprintf(buf, "Games: %d - EMU not found '%s'", emu->files.count, emu->partition_name);
             }
-            draw_chars(x, (y+1)*8, length, buf, color_selected, color_black);
+            draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
             idle_counter = 0;
+            battery_draw = true;
+        }
+        if (battery_draw)
+        {
+            odroid_ui_battery_draw(320 - 23 ,1, 20, battery_percentage_old);
+            battery_draw = false;
         }
         odroid_gamepad_state joystick;
         odroid_input_gamepad_read(&joystick);
@@ -362,7 +399,7 @@ void goemu_loop()
                 last_key = ODROID_INPUT_START;
                 if (emu->available)
                 {
-                    int sel = odroid_ui_ask_v2("Load savestate?",color_selected, COLOR_RGB(1,2,5), 1);
+                    int sel = odroid_ui_ask_v2("Load savestate?",color_selected, color_bg_default, 1);
                     if (sel < 0) 
                     {
                         selected_last = -1;
@@ -387,6 +424,13 @@ void goemu_loop()
             }
             else if (joystick.values[ODROID_INPUT_MENU]) {
                 esp_restart();
+            } else if (joystick.values[ODROID_INPUT_VOLUME]) {
+                last_key = ODROID_INPUT_VOLUME;
+                odroid_display_unlock();
+                odroid_ui_menu_ext(false, NULL);
+                odroid_display_lock();
+                selected_last = -1;
+                idle_counter = 0;
             } else
             {
             goemu_ui_choose_file_input(emu, &joystick, &last_key);

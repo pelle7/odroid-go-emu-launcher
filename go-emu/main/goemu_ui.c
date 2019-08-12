@@ -14,6 +14,14 @@
 #include <string.h>
 #include <dirent.h>
 
+#undef color_default
+#undef color_selected
+#undef color_bg_default
+
+#define color_default C_GRAY
+#define color_selected C_WHITE
+#define color_bg_default (0.75*i) 
+
 #define ROM_PATH "/sd/roms"
 
 void goemu_ui_choose_file_init(goemu_emu_data_entry *emu) {
