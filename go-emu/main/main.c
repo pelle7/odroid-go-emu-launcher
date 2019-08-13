@@ -134,13 +134,13 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
 {
     if (emu->files.count == 0)
     {
-        draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
         return;
     }
     uint32_t crc = emu->checksums[emu->selected];
     if (crc == 0)
     {
-        draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
         char *file = goemu_ui_choose_file_getfile(emu);
         FILE *f = fopen(file, "rb");
         if (f)
@@ -212,7 +212,6 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
                 fread(img, 2, width*height, f);
                 
                 ili9341_write_frame_rectangleLE(320-width,240-height, width, height, img);
-                // wait_for_key(last_key);
                 heap_caps_free(img);
             }
             else
@@ -230,10 +229,10 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
     }
     if (crc == 1)
     {
-        draw_chars(320-8*12, (6)*8, 12, "No art found", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8, 12, "No art found", C_RED, C_BLACK);
     } else
     {
-        draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
     }
     emu->checksums[emu->selected] = crc;
 }
@@ -317,11 +316,11 @@ void goemu_loop()
             int y = 4;
             int x = 6 * 8;
             int length = 40 - 6;
-            draw_chars(x, y*8, length, emu->system_name, color_selected, C_BLACK);
+            odroid_ui_draw_chars(x, y*8, length, emu->system_name, color_selected, C_BLACK);
             bool first = !emu->initialized;
             if (first)
             {
-                draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, C_BLACK);
+                odroid_ui_draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, C_BLACK);
                 // Workaround for 4GB sd card? If the last SD-card access failed, new one fails too? 
                 if (emu_last && emu_last->files.count>0)
                 {
@@ -344,7 +343,7 @@ void goemu_loop()
             selected_last = -1;
             if (first)
             {
-                draw_chars(x, (y+1)*8, length, " ", color_selected, C_BLACK);
+                odroid_ui_draw_chars(x, (y+1)*8, length, " ", color_selected, C_BLACK);
             }
             char buf[40];
             if (emu->available)
@@ -355,7 +354,7 @@ void goemu_loop()
             {
                 sprintf(buf, "Games: %d - EMU not found '%s'", emu->files.count, emu->partition_name);
             }
-            draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
+            odroid_ui_draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
             idle_counter = 0;
             battery_draw = true;
         }
@@ -445,7 +444,7 @@ void goemu_loop()
         usleep(20*1000UL);
         selected_last = emu->selected;
     }    
-    wait_for_key(last_key);
+    odroid_ui_wait_for_key(last_key, false);
     odroid_display_unlock();
     ili9341_blank_screen();
     
@@ -477,7 +476,7 @@ void app_main(void)
     printf("go-emu (%s-%s).\n", COMPILEDATE, GITREV);
     
     odroid_setup();
-    odroid_ui_debug_enter_loop();
+    odroid_ui_enter_loop();
     ili9341_blank_screen();
     goemu_setup();
     goemu_loop();

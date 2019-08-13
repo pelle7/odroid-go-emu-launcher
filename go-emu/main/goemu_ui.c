@@ -52,7 +52,7 @@ void goemu_ui_choose_file_init(goemu_emu_data_entry *emu) {
     int count = emu->files.count;
     uint32_t *entries_refs = emu->files.refs;
 
-    clean_draw_buffer();
+    odroid_ui_clean_draw_buffer();
     odroid_gamepad_state lastJoysticState;
     odroid_input_gamepad_read(&lastJoysticState);
     
@@ -156,7 +156,7 @@ void goemu_ui_choose_file_draw(goemu_emu_data_entry *emu)
         {
             text = " ";
         }
-        draw_chars(x, y, 40, text, entry==emu->selected?color_selected:color_default, color_bg_default);
+        odroid_ui_draw_chars(x, y, 40, text, entry==emu->selected?color_selected:color_default, color_bg_default);
     }
         
 }
