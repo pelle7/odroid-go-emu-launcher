@@ -18,6 +18,7 @@
 #include "../components/odroid/odroid_display.h"
 #include "../components/odroid/odroid_sdcard.h"
 #include "../components/odroid/odroid_ui.h"
+#include "../components/odroid/odroid_ui_idle.h"
 
 #include <dirent.h>
 #include <stdarg.h>
@@ -237,6 +238,11 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
     emu->checksums[emu->selected] = crc;
 }
 
+void odroid_goemu_menu(odroid_ui_window *window)
+{
+    odroid_ui_create_entry(window, &odroid_ui_func_update_idlemode, &odroid_ui_func_toggle_idlemode);
+}
+
 void goemu_loop()
 {
     goemu_emu_data *all_emus = goemu_data_setup();
@@ -278,6 +284,7 @@ void goemu_loop()
     odroid_battery_state battery_state;
     bool battery_draw = false;
     odroid_input_battery_level_read(&battery_state);
+    bool menu_restart = false;
 
 //#define DEBUG_TEST_BATTERY
     
@@ -375,6 +382,16 @@ void goemu_loop()
             draw_cover(emu, &joystick);
         }
         
+        if (idle_counter> 50*60)
+        {
+            odroid_display_unlock();
+            odroid_ui_idle_run();
+            odroid_display_lock();
+            selected_emu_last = -1;
+            selected_last = -1;
+            idle_counter = 0;
+        }
+        
         if (last_key >= 0) {
             if (!joystick.values[last_key]) {
                 last_key = -1;
@@ -423,13 +440,17 @@ void goemu_loop()
             }
             else if (joystick.values[ODROID_INPUT_MENU]) {
                 esp_restart();
-            } else if (joystick.values[ODROID_INPUT_VOLUME]) {
+            } else if (joystick.values[ODROID_INPUT_VOLUME] || menu_restart) {
                 last_key = ODROID_INPUT_VOLUME;
                 odroid_display_unlock();
-                odroid_ui_menu_ext(false, NULL);
+                menu_restart = odroid_ui_menu_ext(menu_restart, &odroid_goemu_menu);
                 odroid_display_lock();
                 selected_last = -1;
                 idle_counter = 0;
+                if (menu_restart)
+                {
+                    selected_emu_last = - 1;
+                }
             } else
             {
             goemu_ui_choose_file_input(emu, &joystick, &last_key);

@@ -363,6 +363,12 @@ void odroid_ui_draw_chars(uint16_t x, uint16_t y, uint16_t width, char *text, ui
 	ili9341_write_frame_rectangleLE(x, y, width * 8, 8, odroid_ui_framebuffer);
 }
 
+void odroid_ui_draw_chars_ext(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg, int y_from, int y_to) {
+    if (y_from>=8 || y_to ==0) return;
+    render(0, 0, width, text, color, color_bg);
+    ili9341_write_frame_rectangleLE(x, y + y_from, width * 8, y_to-y_from, &odroid_ui_framebuffer[y_from*width*8]);
+}
+
 void draw_empty_line() {
 	char tmp[8];
 	odroid_ui_clean_draw_buffer();

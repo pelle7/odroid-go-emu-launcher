@@ -16,11 +16,13 @@ int goemu_util_comparator(const void *p, const void *q)
 void goemu_util_readdir(goemu_util_strings *rc, const char *path, const char *ext)
 {
     rc->count = 0;
+    rc->buffer = NULL;
+    rc->refs = NULL;
     DIR* dir = opendir(path);
     if (!dir)
     {
         printf("goemu_util_readdir: failed '%s'. ERR: %d\n", path, errno);
-        return NULL;    
+        return;    
     }
     int count = 0;
     int count_chars = 0;
@@ -64,7 +66,7 @@ void goemu_util_readdir(goemu_util_strings *rc, const char *path, const char *ex
     closedir(dir);
     
     if (!entries_refs) {
-       printf("Could not find any files\n");
+       printf("Could not find any files: %s\n", path);
        return NULL;
     }
     rc->buffer = entries_buffer;
