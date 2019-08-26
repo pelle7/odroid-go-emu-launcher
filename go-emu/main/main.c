@@ -239,9 +239,24 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
     emu->checksums[emu->selected] = crc;
 }
 
+
+void odroid_ui_func_update_wifi(odroid_ui_entry *entry)
+{
+   sprintf(entry->text, "%-9s: %s", "Wifi", "toggle");
+}
+
+odroid_ui_func_toggle_rc odroid_ui_func_toggle_wifi(odroid_ui_entry *entry, odroid_gamepad_state *joystick)
+{
+    odroid_display_unlock();
+    goemu_wifi_start();
+    odroid_display_lock();
+    return ODROID_UI_FUNC_TOGGLE_RC_CHANGED;
+}
+
 void odroid_goemu_menu(odroid_ui_window *window)
 {
     odroid_ui_create_entry(window, &odroid_ui_func_update_idlemode, &odroid_ui_func_toggle_idlemode);
+    odroid_ui_create_entry(window, &odroid_ui_func_update_wifi, &odroid_ui_func_toggle_wifi);
 }
 
 void goemu_loop()
@@ -277,8 +292,6 @@ void goemu_loop()
             }
         }
     }
-    odroid_display_lock();
-    
     int battery_counter = 1000;
     int battery_percentage_old = 0; 
     odroid_battery_state battery_state;
@@ -364,7 +377,7 @@ void goemu_loop()
             odroid_ui_draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
             idle_counter = 0;
             battery_draw = true;
-            //odroid_display_unlock();
+            odroid_display_unlock();
         }
         if (battery_draw)
         {
@@ -387,9 +400,7 @@ void goemu_loop()
         
         if (idle_counter> 50*60)
         {
-            odroid_display_unlock();
             odroid_ui_idle_run();
-            odroid_display_lock();
             selected_emu_last = -1;
             selected_last = -1;
             idle_counter = 0;
@@ -445,9 +456,7 @@ void goemu_loop()
                 esp_restart();
             } else if (joystick.values[ODROID_INPUT_VOLUME] || menu_restart) {
                 last_key = ODROID_INPUT_VOLUME;
-                odroid_display_unlock();
                 menu_restart = odroid_ui_menu_ext(menu_restart, &odroid_goemu_menu);
-                odroid_display_lock();
                 selected_last = -1;
                 idle_counter = 0;
                 if (menu_restart)
@@ -471,8 +480,9 @@ void goemu_loop()
         selected_last = emu->selected;
     }    
     odroid_ui_wait_for_key(last_key, false);
-    odroid_display_unlock();
+    odroid_display_lock();
     ili9341_blank_screen();
+    odroid_display_unlock();
     
     char *rc = goemu_ui_choose_file_getfile(emu);
     printf("Selected game: %s\n", rc);
@@ -505,7 +515,6 @@ void app_main(void)
     odroid_ui_enter_loop();
     ili9341_blank_screen();
     goemu_setup();
-    goemu_wifi_start();
     goemu_loop();
     odroid_ui_ask("go-emu!");            
 }

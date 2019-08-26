@@ -11,6 +11,8 @@
 #include <dirent.h>
 #include "goemu_data.h"
 
+static bool wifi_active = false;
+
 #define FILE_WLAN_CONFIG "/sd/odroid/etc/.wlan.txt"
 
 #if CONFIG_WIFI_ALL_CHANNEL_SCAN
@@ -230,6 +232,60 @@ char *goemu_wifi_get_dest_path(httpd_req_t *req)
     return path_dest;
 }
 
+//#include "web_dropzone.h"
+//#include "web_index.h"
+
+unsigned char index_html[] = { 0x00 };
+unsigned int index_html_len = 1;
+
+unsigned char dropzone_js[] = { 0x00 };
+unsigned int dropzone_js_len = 1;
+
+/* An HTTP GET handler */
+esp_err_t homepage_get(httpd_req_t *req)
+{
+    char filename[128];
+    char emuname[128];
+    strcpy(filename, "");
+    char*  buf = NULL;
+    size_t buf_len;
+    ESP_LOGI(TAG, "sd_get_handler");
+    
+    buf_len = httpd_req_get_url_query_len(req) + 1;
+    if (buf_len > 1) {
+        buf = malloc(buf_len);
+        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+            ESP_LOGI(TAG, "Found URL query => %s", buf);
+            char param[32];
+            if (httpd_query_key_value(buf, "file", filename, sizeof(filename)) == ESP_OK) {
+                ESP_LOGI(TAG, "Found URL query parameter => file=%s", filename);
+            }
+        }
+        free(buf);
+    }
+    printf("File: %s\n", filename);
+    char *text = (char*)index_html;
+    unsigned int text_length = index_html_len;
+    if (strcmp("dropzone.js", filename)==0)
+    {
+        text = (char*)dropzone_js;
+        text_length = dropzone_js_len;
+    }
+    httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
+    httpd_resp_send(req, text, text_length);
+    return ESP_OK;
+}
+
+
+httpd_uri_t goemu_uri_homepage = {
+    .uri       = "/",
+    .method    = HTTP_GET,
+    .handler   = homepage_get,
+    .user_ctx  = NULL
+};
+
+
+
 
 /* An HTTP GET handler */
 esp_err_t sd_handler_get(httpd_req_t *req)
@@ -338,6 +394,29 @@ esp_err_t sd_handler_post(httpd_req_t *req)
     char *path_dest = goemu_wifi_get_dest_path(req);
     if (!path_dest)
     {
+        printf("Request: %s\n", req->uri);
+        char *buf = NULL;
+        int buf_len;
+        buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
+        if (buf_len > 1) {
+            buf = malloc(buf_len);
+            /* Copy null terminated value string into buffer */
+            if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
+                ESP_LOGI(TAG, "Found header => Host: %s", buf);
+            }
+            free(buf);
+        }
+        buf_len = httpd_req_get_hdr_value_len(req, "Content-Disposition") + 1;
+        if (buf_len > 1) {
+            buf = malloc(buf_len);
+            /* Copy null terminated value string into buffer */
+            if (httpd_req_get_hdr_value_str(req, "Content-Disposition", buf, buf_len) == ESP_OK) {
+                ESP_LOGI(TAG, "Found header => Host: %s", buf);
+            }
+            free(buf);
+        }
+        //path_dest = (char*)malloc(256);
+        //sprintf(path_dest, "/sd/dummy-%d.dat", rand());
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "File-Dest: %s", path_dest);
@@ -463,6 +542,7 @@ httpd_handle_t start_webserver(void)
         httpd_register_uri_handler(server, &goemu_uri_sdcard_get);
         httpd_register_uri_handler(server, &goemu_uri_sdcard_post);
         httpd_register_uri_handler(server, &goemu_uri_sdcard_delete);
+        httpd_register_uri_handler(server, &goemu_uri_homepage);
         ESP_LOGI(TAG, "Registering URI handlers: ready");
         ESP_LOGI(TAG, "---- UP AND RUNNING ----");
         return server;
@@ -620,6 +700,7 @@ bool wifi_prepare(wifi_config_t *wifi_config)
 /* Initialize Wi-Fi as sta and set scan method */
 static void wifi_scan(void)
 {
+    printf("wifi_scan\n");
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = "SSID",
@@ -660,6 +741,14 @@ void test_time()
 
 void goemu_wifi_start()
 {
+    if (wifi_active) return;
+    esp_log_level_set("*", ESP_LOG_DEBUG);
+    //esp_log_level_set("wifi", ESP_LOG_WARN);
+    //httpd
+    //esp_log_level_set("httpd_parse", ESP_LOG_DEBUG);
+    //esp_log_level_set("dhcpc", ESP_LOG_INFO);
+    
+    wifi_active = true;
     wifi_scan();
-    // test_time();
+    //test_time();
 }
