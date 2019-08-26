@@ -26,6 +26,11 @@ char buf[42];
 
 int exec_menu(bool *restart_menu, odroid_ui_func_window_init_def func_window_init);
 
+#define SLEEP_LOCK_SAFE \
+  odroid_display_unlock(); \
+  usleep(20*1000UL); \
+  odroid_display_lock();
+
 
 /******************************
  * Config menu: Scaling
@@ -507,6 +512,7 @@ bool odroid_ui_menu_ext(bool restart_menu, odroid_ui_func_window_init_def func_w
 #endif
 	    }
         lastJoysticState = joystick;
+        SLEEP_LOCK_SAFE
     }
     restart_menu = false;
     if (!shortcut_key) {
@@ -743,8 +749,7 @@ int exec_menu(bool *restart_menu, odroid_ui_func_window_init_def func_window_ini
         		odroid_ui_entry_update(&window, selected, color_selected);
         }
         ODROID_UI_BATTERY_DRAW( (window.x+(window.width - 2)*8), (window.y-8) )
-        
-        usleep(20*1000UL);
+        SLEEP_LOCK_SAFE
     }
     odroid_ui_wait_for_key(last_key, false);
     
@@ -795,7 +800,6 @@ bool odroid_ui_popup(const char *text, uint16_t color, uint16_t color_bg)
             rc = false;
             break;
         }
-        
         usleep(20*1000UL);
     }
     odroid_ui_wait_for_key(last_key, false);
@@ -852,7 +856,6 @@ int odroid_ui_ask_v2(const char *text, uint16_t color, uint16_t color_bg, int se
             odroid_ui_draw_chars(x2 + 8*5, y+ 8*2, 4, " No", nr==rc?color_sel:color, nr==rc?color_bg_sel:color_bg);
             rc_old = rc;
         }
-        
         usleep(20*1000UL);
     }
     odroid_ui_wait_for_key(last_key, false);
